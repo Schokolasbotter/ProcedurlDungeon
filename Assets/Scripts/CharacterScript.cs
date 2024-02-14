@@ -31,7 +31,7 @@ public class CharacterScript : MonoBehaviour
         Vector3 movementVector = ForwardVector * verticalInput + RightVector * horizontalInput;
         movementVector *= movementSpeed * Time.deltaTime;
         GetComponent<CharacterController>().Move(movementVector);
-        GetComponent<CharacterController>().Move(new Vector3(0f, -2f, 0f));
+        GetComponent<CharacterController>().Move(new Vector3(0f, -9f*Time.deltaTime, 0f));
 
         //Animation
         if(movementVector.magnitude != 0)
@@ -63,7 +63,7 @@ public class CharacterScript : MonoBehaviour
                 {
                     StartCoroutine(hit.collider.gameObject.GetComponent<TreasureScript>().OpenTreasure());
                 }
-                else
+                else if (hit.collider.gameObject.tag == "Wall")
                 {
                     Destroy(hit.collider.gameObject);
                 }

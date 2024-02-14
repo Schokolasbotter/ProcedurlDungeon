@@ -22,6 +22,8 @@ public class GridGenerator : MonoBehaviour
     public List<GameObject> floorTiles;
     public GameObject FloorTileContainer;
     public GameObject DirtContainer;
+    public List<GameObject> FloorObjects;
+    public GameObject Stones;
     [Header("Walls")]
     public List<GameObject> Walls;
     public GameObject WallsContainer;
@@ -29,6 +31,15 @@ public class GridGenerator : MonoBehaviour
     public GameObject playerCharacter;
     public GameObject playerCamera;
     public GameObject treasureObject;
+    [Header("Coin Traps")]
+    public GameObject coin;
+    public GameObject trap;
+    public GameObject coinTrapContainer;
+    [Header("Enemy Camp")]
+    public GameObject campCorner;
+    public GameObject campWall;
+    public GameObject barrel;
+    public GameObject enemy;
 
 
     // Start is called before the first frame update
@@ -47,7 +58,20 @@ public class GridGenerator : MonoBehaviour
         PlaceWalls();
         FillOutsideWithDirt();
         SpawnPlayer();
-
+        int coinAmount = Random.Range(2, 5);
+        int coinCounter = 0;
+        while(coinCounter < coinAmount)
+        {
+            SpawnCoinTrap();
+            coinCounter++;
+        }
+        int campAmount = 1;//Random.Range(1, 3);
+        int campCounter = 0;
+        while (campCounter < campAmount)
+        {
+            SpawnEnemyCamp();
+            campCounter++;
+        }
     }
 
     // Update is called once per frame
@@ -59,9 +83,9 @@ public class GridGenerator : MonoBehaviour
     private void PopulateGrid()
     {
         //Create RandomWalker List
-        randomWalkers = new List<RandomWalker>();
 
         //Visualize Grid
+        /*
         for (int i = 0; i < gridSize; i++)
         {
             for (int j = 0; j < gridSize; j++)
@@ -71,13 +95,17 @@ public class GridGenerator : MonoBehaviour
                 gridObjects[i, j] = tile;
             }
         }
+        */
 
-        //Guaranteed 5 Walkers
-        randomWalkers.Add(new RandomWalker(1, gridSize / 2, gridSize, grid));
-        randomWalkers.Add(new RandomWalker(gridSize / 2, 1, gridSize, grid));
-        randomWalkers.Add(new RandomWalker(gridSize - 2, gridSize / 2, gridSize, grid));
-        randomWalkers.Add(new RandomWalker(gridSize / 2, gridSize - 2, gridSize, grid));
-        randomWalkers.Add(new RandomWalker(gridSize / 2, gridSize / 2, gridSize, grid));
+        randomWalkers = new List<RandomWalker> 
+        {
+            //Guaranteed 5 Walkers
+            new RandomWalker(1, gridSize / 2, gridSize, grid),
+            new RandomWalker(gridSize / 2, 1, gridSize, grid),
+            new RandomWalker(gridSize - 2, gridSize / 2, gridSize, grid),
+            new RandomWalker(gridSize / 2, gridSize - 2, gridSize, grid),
+            new RandomWalker(gridSize / 2, gridSize / 2, gridSize, grid)
+        };
 
         for (int i = 31; i <= gridSize; i += 10)
         {
@@ -107,6 +135,7 @@ public class GridGenerator : MonoBehaviour
         }
 
         //Update the grid
+        /*
         for (int i = 0; i < gridSize; i++)
         {
             for (int j = 0; j < gridSize; j++)
@@ -119,6 +148,7 @@ public class GridGenerator : MonoBehaviour
                 }
             }
         }
+        */
 
         randomWalkers.Clear();
     }
@@ -133,6 +163,10 @@ public class GridGenerator : MonoBehaviour
                 float floorTileHeight = floorTiles[0].GetComponent<MeshFilter>().sharedMesh.bounds.size.z;
                 Vector3 position = new Vector3(i * floorTileWidth - (int)(gridSize * 0.1f), 0f, j * floorTileHeight - (int)(gridSize * 0.1f));
                 GameObject tile = Instantiate(floorTiles[Random.Range(0, floorTiles.Count)], position, Quaternion.identity, FloorTileContainer.transform);
+                if(Random.value < 0.05f)
+                {
+                    Instantiate(FloorObjects[Random.Range(0, FloorObjects.Count)], position, Quaternion.identity, FloorTileContainer.transform);
+                }
             }
         }
     }
@@ -204,17 +238,111 @@ public class GridGenerator : MonoBehaviour
             x = Random.Range(0, gridSize);
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
+            DestroyObject(x, y);
         }
         Instantiate(playerCamera, Vector3.zero, playerCamera.transform.rotation);
-        Instantiate(playerCharacter, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
+        GameObject player = Instantiate(playerCharacter, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
         canSpawn = false;
         while (!canSpawn)
         {
             x = Random.Range(0, gridSize);
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
+            DestroyObject(x, y);
+            Vector3 treasurePosition = new Vector3(x*meshWidth, 0f, y*meshHeight);
+            float distanceToPlayer = (player.transform.position - treasurePosition).magnitude;
+            if (distanceToPlayer < 20 * meshWidth) { canSpawn = false; }
         }
         Instantiate(treasureObject, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
+    }
+
+    private void SpawnCoinTrap()
+    {
+        bool canSpawn = false;
+        int x = 0;
+        int y = 0;
+        while (!canSpawn)
+        {
+            x = Random.Range(0, gridSize);
+            y = Random.Range(0, gridSize);
+            canSpawn = grid[x, y];
+            DestroyObject(x, y);
+        }
+        Instantiate(coin, new Vector3(meshWidth * x, 0.2f, meshHeight * y), playerCharacter.transform.rotation, coinTrapContainer.transform);
+
+        float rValue = Random.value;
+        switch (rValue)
+        {
+            case <= 0.33f:
+                //Pattern1
+                for (int i = -1; i < 2; i++)
+                {
+                    for (int j = -1; j < 2; j++)
+                    {
+                        if (i == 0 && j == 0) { continue; }
+                        if (x + i < 0 || y + j < 0 || x + i >= gridSize || y + j >= gridSize) { continue; }
+                        if (grid[x + i, y + j] == false) { continue; }
+                        DestroyObject(x +i, y+j);
+                        Instantiate(trap, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), trap.transform.rotation, coinTrapContainer.transform);
+                    }
+                }
+                break;
+            case <= 0.66f:
+                //Pattern2
+                for (int i = -2; i < 3; i++)
+                {
+                    for (int j = -2; j < 3; j++)
+                    {
+                        if (i == 0 && j == 0) { continue; }
+                        if (x + i < 0 || y + j < 0 || x + i >= gridSize || y + j >= gridSize) { continue; }
+                        if (grid[x + i, y + j] == false) { continue; }
+                        DestroyObject(x + i, y + j);
+                        if (Random.value < 0.5f) 
+                        {
+                            Instantiate(trap, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), trap.transform.rotation, coinTrapContainer.transform);                            
+                        }
+                    }
+                }
+                break;
+            case <= 1f:
+                //Pattern3
+                for (int i = -2; i < 3; i++)
+                {
+                    for (int j = -2; j < 3; j++)
+                    {
+                        if (i == 0 && j == 0) { continue; }
+                        if (x + i < 0 || y + j < 0 || x + i >= gridSize || y + j >= gridSize) { continue; }
+                        if (grid[x + i, y + j] == false) { continue; }
+                        if((Mathf.Abs(i) == 2 && j == 0) || (Mathf.Abs(i) == 1 && Mathf.Abs(j) == 1) || (i == 0 && Mathf.Abs(j) == 2)) {continue; }
+                        DestroyObject(x + i, y + j);
+                        Instantiate(trap, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), trap.transform.rotation, coinTrapContainer.transform);
+                    }
+                }
+                break;
+        }
+    }
+
+    private void SpawnEnemyCamp()
+    {
+        //Spawn 4 pillars
+        //Connect walls
+        //Place Random Barrels
+        //Place Coins
+        //Place Enemies
+
+    }
+
+    private void DestroyObject(int x, int y)
+    {
+        RaycastHit[] foundObjects = Physics.SphereCastAll(new Vector3(meshWidth * x, 0f, meshHeight * y), 0.1f, transform.forward,0.1f);
+        foreach (RaycastHit hit in foundObjects)
+        {
+            //Return falls if it finds an object
+            if(hit.collider.gameObject.tag == "Object" || hit.collider.gameObject.tag == "Wall")
+            {
+                Destroy(hit.collider.gameObject);
+            }            
+        }
     }
 
     public class RandomWalker

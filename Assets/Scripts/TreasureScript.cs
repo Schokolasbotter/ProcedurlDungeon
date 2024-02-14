@@ -15,7 +15,7 @@ public class TreasureScript : MonoBehaviour
     public IEnumerator OpenTreasure()
     {
         animator.SetTrigger("OpenTreasure");
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(2);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
