@@ -1,7 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -23,7 +21,6 @@ public class GridGenerator : MonoBehaviour
     public GameObject FloorTileContainer;
     public GameObject DirtContainer;
     public List<GameObject> FloorObjects;
-    public GameObject Stones;
     [Header("Walls")]
     public List<GameObject> Walls;
     public GameObject WallsContainer;
@@ -40,6 +37,7 @@ public class GridGenerator : MonoBehaviour
     public GameObject campWall;
     public GameObject barrel;
     public GameObject enemy;
+    public GameObject enemyCampContainer;
 
 
     // Start is called before the first frame update
@@ -65,12 +63,17 @@ public class GridGenerator : MonoBehaviour
             SpawnCoinTrap();
             coinCounter++;
         }
-        int campAmount = 1;//Random.Range(1, 3);
+        int campAmount = Random.Range(1, 10);
         int campCounter = 0;
         while (campCounter < campAmount)
         {
             SpawnEnemyCamp();
             campCounter++;
+        }
+        int enemyCount = Random.Range(10, 21);
+        for(int i =0; i < enemyCount; i++)
+        {
+            SpawnEnemy();
         }
     }
 
@@ -203,8 +206,8 @@ public class GridGenerator : MonoBehaviour
                 float floorTileWidth = floorTiles[0].GetComponent<MeshFilter>().sharedMesh.bounds.size.x;
                 float floorTileHeight = floorTiles[0].GetComponent<MeshFilter>().sharedMesh.bounds.size.z;
                 Vector3 position = new Vector3(i * floorTileWidth, 0f, j * floorTileHeight);
+                DestroyObject(i,j);
                 GameObject Wall = Instantiate(Walls[WallIndex], position, Walls[WallIndex].transform.rotation, WallsContainer.transform);
-
             }
         }
     }
@@ -238,7 +241,7 @@ public class GridGenerator : MonoBehaviour
             x = Random.Range(0, gridSize);
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
-            DestroyObject(x, y);
+            if (canSpawn) { DestroyObject(x, y); }
         }
         Instantiate(playerCamera, Vector3.zero, playerCamera.transform.rotation);
         GameObject player = Instantiate(playerCharacter, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
@@ -248,10 +251,10 @@ public class GridGenerator : MonoBehaviour
             x = Random.Range(0, gridSize);
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
-            DestroyObject(x, y);
+            if (canSpawn) { DestroyObject(x, y); }
             Vector3 treasurePosition = new Vector3(x*meshWidth, 0f, y*meshHeight);
             float distanceToPlayer = (player.transform.position - treasurePosition).magnitude;
-            if (distanceToPlayer < 20 * meshWidth) { canSpawn = false; }
+            if (distanceToPlayer < 3f/4f * gridSize * meshWidth) { canSpawn = false; }
         }
         Instantiate(treasureObject, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
     }
@@ -261,14 +264,17 @@ public class GridGenerator : MonoBehaviour
         bool canSpawn = false;
         int x = 0;
         int y = 0;
+        int whileCounter = 0;
         while (!canSpawn)
         {
+            whileCounter++;
             x = Random.Range(0, gridSize);
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
-            DestroyObject(x, y);
+            if (canSpawn) { DestroyObject(x, y); }
+            if(whileCounter >= 30) { return; }
         }
-        Instantiate(coin, new Vector3(meshWidth * x, 0.2f, meshHeight * y), playerCharacter.transform.rotation, coinTrapContainer.transform);
+        Instantiate(coin, new Vector3(meshWidth * x, 0.2f, meshHeight * y), coin.transform.rotation, coinTrapContainer.transform);
 
         float rValue = Random.value;
         switch (rValue)
@@ -324,12 +330,133 @@ public class GridGenerator : MonoBehaviour
 
     private void SpawnEnemyCamp()
     {
-        //Spawn 4 pillars
-        //Connect walls
-        //Place Random Barrels
-        //Place Coins
-        //Place Enemies
+        //Spawn Center
+        bool canSpawn = false;
+        int x = 0;
+        int y = 0;
+        int whileCounter = 0;
+        while (!canSpawn)
+        {
+            whileCounter++;
+            x = Random.Range(0, gridSize);
+            y = Random.Range(0, gridSize);
+            canSpawn = grid[x, y];
+            if(canSpawn)
+            {
+                RaycastHit[] allHits = Physics.BoxCastAll(new Vector3(meshWidth * x, 0f, meshHeight * y), new Vector3(2.5f, 2.5f, 2.5f), transform.forward);
+                foreach(RaycastHit hit in allHits)
+                {
+                    if(hit.collider.gameObject.tag == "Object")
+                    {
+                        float distanceToObject = (hit.collider.gameObject.transform.position - new Vector3(meshWidth * x, 0f, meshHeight * y)).magnitude;
+                        if(distanceToObject < 5 * meshWidth)
+                        {
+                            canSpawn = false;
+                        }
+                    }
+                }
+            }
+            if (canSpawn) { DestroyObject(x, y); }
+            if (whileCounter >= 100f) { return; }
+        }
+        Instantiate(barrel, new Vector3(meshWidth * x + Random.Range(-meshWidth, meshWidth), 0f, meshHeight * y + Random.Range(-meshHeight, meshHeight)), Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), enemyCampContainer.transform);
+        //Walls
+        int startingPointI = Random.Range(-4, 0);
+        int endPointI = Random.Range(2, 5);
+        int startingPointJ = Random.Range(-4, 0);
+        int endPointJ = Random.Range(2, 5);
 
+        for (int i = startingPointI; i < endPointI; i++)
+        {
+            for (int j = startingPointJ; j < endPointJ; j++)
+            {
+                DestroyObject(x + i, y + j);
+                //Corner Pillars
+                if(i == startingPointI && j == startingPointJ)
+                {
+                    Instantiate(campCorner, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f,0f,0f), enemyCampContainer.transform);
+                    continue;
+                }
+                else if( i == startingPointI && j == endPointJ-1)
+                {
+                    Instantiate(campCorner, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 90f, 0f), enemyCampContainer.transform);
+                    continue;
+                }
+                else if(i == endPointI-1 && j == startingPointJ)
+                {
+                    Instantiate(campCorner, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 270f, 0f), enemyCampContainer.transform);
+                    continue;
+                }
+                else if (i == endPointI-1 && j == endPointJ-1)
+                {
+                    Instantiate(campCorner, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
+                    continue;
+                }
+                //Walls
+                if(i == startingPointI && j != 0)
+                {
+                    Instantiate(campWall, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 90f, 0f), enemyCampContainer.transform);
+                }
+                if (i == endPointI-1 && j != 0)
+                {
+                    Instantiate(campWall, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 270f, 0f), enemyCampContainer.transform);
+                }
+                if (j == startingPointJ && i != 0 )
+                {
+                    Instantiate(campWall, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 0f, 0f), enemyCampContainer.transform);
+                }
+                if (j == endPointJ-1 && i != 0)
+                {
+                    Instantiate(campWall, new Vector3(meshWidth * x + i, 0f, meshHeight * y + j), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
+                }
+
+                //Objects
+                float randomValue = Random.value;
+                switch (randomValue)
+                {
+                    case < 0.2f:
+                        //Barrel
+
+                        Instantiate(barrel, new Vector3(meshWidth * x + i + Random.Range(-meshWidth/2,meshWidth/2), 0f, meshHeight * y + j + Random.Range(-meshHeight/2, meshHeight/2)), Quaternion.Euler(0f,Random.Range(0f,360f),0f), enemyCampContainer.transform);
+                        break;
+                    case < 0.4f:
+                        //Coin
+                        Instantiate(coin, new Vector3(meshWidth * x + i, 0.2f, meshHeight * y + j), coin.transform.rotation, enemyCampContainer.transform);
+                        break;                    
+                }
+            }
+        }
+
+        //Place Enemies
+        //1 Inside Camp
+        int xOffset = Random.Range(-4, 4);
+        int yOffset = Random.Range(-4, 4);
+        DestroyObject(x+xOffset, y+yOffset);
+        Instantiate(enemy, new Vector3(meshWidth * x + xOffset, 0.2f, meshHeight * y + yOffset), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
+        //2 Outside
+        xOffset = Random.Range(-6, -4);
+        yOffset = Random.Range(-6, -4);
+        DestroyObject(x + xOffset, y + yOffset);
+        Instantiate(enemy, new Vector3(meshWidth * x + xOffset, 0.2f, meshHeight * y + yOffset), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
+        xOffset = Random.Range(5, 7);
+        yOffset = Random.Range(5, 7);
+        DestroyObject(x + xOffset, y + yOffset);
+        Instantiate(enemy, new Vector3(meshWidth * x + xOffset, 0.2f, meshHeight * y + yOffset), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
+    }
+
+    private void SpawnEnemy()
+    {
+        bool canSpawn = false;
+        int x = 0;
+        int y = 0;
+        while (!canSpawn)
+        {
+            x = Random.Range(0, gridSize);
+            y = Random.Range(0, gridSize);
+            canSpawn = grid[x, y];
+            if (canSpawn) { DestroyObject(x, y); }
+        }
+        Instantiate(enemy, new Vector3(x * meshWidth, 0f, y * meshHeight), enemy.transform.rotation,enemyCampContainer.transform);
     }
 
     private void DestroyObject(int x, int y)
