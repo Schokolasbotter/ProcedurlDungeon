@@ -16,6 +16,8 @@ public class GridGenerator : MonoBehaviour
     public int gridSize = 100;
     public GameObject basicFloorTile;
     public GameObject floorTile;
+    public GameObject colliderWall;
+    public GameObject colliderContainer;
     [Header("Floor Tiles")]
     public List<GameObject> floorTiles;
     public GameObject FloorTileContainer;
@@ -127,7 +129,7 @@ public class GridGenerator : MonoBehaviour
                 if (randomWalkers[i].stepCount < 100 && randomWalkers[i] != null)
                 {
                     randomWalkers[i].moveOnGrid();
-                    if (randomWalkers[i].stepCount == 51 && Random.value < 1.1f && randomWalkers.Count < gridSize)
+                    if (randomWalkers[i].stepCount == 51 && randomWalkers.Count < gridSize)
                     {
                         randomWalkers.Add(new RandomWalker((int)randomWalkers[i].position.x, (int)randomWalkers[i].position.y, gridSize, grid));
                     }
@@ -218,7 +220,7 @@ public class GridGenerator : MonoBehaviour
         {
             for (int j = 0; j < gridSize * 1.2; j++)
             {
-                if (i > 0.1 * gridSize && j > 0.1 * gridSize && i < 1.1f * gridSize - 1 && j < 1.1f * gridSize - 1)
+                if (i > 0.1f * gridSize && j > 0.1f * gridSize && i < 1.1f * gridSize - 1 && j < 1.1f * gridSize - 1)
                 {
                     continue;
                 }
@@ -228,6 +230,30 @@ public class GridGenerator : MonoBehaviour
                 GameObject dirt = Instantiate(Walls[0], position, Quaternion.identity, DirtContainer.transform);
             }
         }
+
+        for(int i = 0; i < 4; i++)
+        {
+            GameObject wall = Instantiate(colliderWall, colliderContainer.transform);
+            wall.GetComponent<BoxCollider>().size = new Vector3(gridSize * 1.2f, 10f, 2f);
+            wall.transform.rotation = Quaternion.Euler(0f, i * 90f, 0f);
+            switch(i)
+            {
+                case 0:
+                    wall.transform.position = new Vector3((meshWidth * gridSize * 0.6f) - (gridSize * 1.2f * 0.1f), 0f, 0f - (gridSize * 1.2f * 0.1f));
+                    break;
+                case 1:
+                    wall.transform.position = new Vector3((meshWidth * gridSize * 1.2f) - (gridSize * 1.2f * 0.1f), 0f, (meshHeight * gridSize * 0.6f) - (gridSize * 1.2f * 0.1f));
+                    break;
+                case 2:
+                    wall.transform.position = new Vector3((meshWidth * gridSize * 0.6f) - (gridSize * 1.2f * 0.1f), 0f, (meshHeight * gridSize * 1.2f) - (gridSize * 1.2f * 0.1f));
+                    break;
+                case 3:
+                    wall.transform.position = new Vector3(0f - (gridSize * 1.2f * 0.1f), 0f, (meshHeight * gridSize * 0.6f) - (gridSize * 1.2f * 0.1f));
+                    break;
+            }
+        }
+        //DirtContainer.GetComponent<BoxCollider>().size = new Vector3(gridSize * 1.2f, 50f, gridSize * 1.2f);
+        //sDirtContainer.GetComponent<BoxCollider>().center = new Vector3(DirtContainer.GetComponent<BoxCollider>().size.x/2f, 0f, DirtContainer.GetComponent<BoxCollider>().size.z/2f);
     }
 
 
