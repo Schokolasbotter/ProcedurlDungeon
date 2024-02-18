@@ -5,6 +5,17 @@ using UnityEngine.UIElements;
 
 public class GridGenerator : MonoBehaviour
 {
+    /* Generator Script
+     * This is the core of the demonstration and generates step by step the whole level for the user to see
+     * The generation is done in the start function and does so in this order:
+     * Populate the grid through Random Walkers
+     * Instantiate floor tiles with stones and rock objects
+     * Place all the dungeon walls
+     * Fill out outside of the grid and instantiate colliders
+     * Then populate the grid with player, camera, treasure
+     * As well as Coin Traps, Enemy Camps and Enemies
+     */
+
     //Grid Generation
     private bool[,] grid;
     private GameObject[,] gridObjects;
@@ -79,29 +90,11 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
+    //This Function Creates Random Walkers from their class and carves out a dungeon space within a 2-dimensional boolean grid
     private void PopulateGrid()
     {
+ 
         //Create RandomWalker List
-
-        //Visualize Grid
-        /*
-        for (int i = 0; i < gridSize; i++)
-        {
-            for (int j = 0; j < gridSize; j++)
-            {
-                Vector3 position = new Vector3(i * meshWidth, 0f, j * meshHeight);
-                GameObject tile = Instantiate(basicFloorTile, position, Quaternion.identity, transform);
-                gridObjects[i, j] = tile;
-            }
-        }
-        */
-
         randomWalkers = new List<RandomWalker> 
         {
             //Guaranteed 5 Walkers
@@ -112,14 +105,7 @@ public class GridGenerator : MonoBehaviour
             new RandomWalker(gridSize / 2, gridSize / 2, gridSize, grid)
         };
 
-        for (int i = 31; i <= gridSize; i += 10)
-        {
-            int randomX = (int)(Random.Range(1, gridSize) * gridSize);
-            int randomY = (int)(Random.Range(1, gridSize) * gridSize);
-            //randomWalkers.Add(new RandomWalker(randomX, randomY, gridSize, grid));
-
-        }
-
+        //Let the walkers carve out a space
         bool finishedSteps = true;
         while (finishedSteps)
         {
@@ -145,19 +131,25 @@ public class GridGenerator : MonoBehaviour
         {
             for (int j = 0; j < gridSize; j++)
             {
-                if (grid[i, j] == true && gridObjects[i, j].tag != "Dungeon Floor")
+                Vector3 tilePosition = gridObjects[i, j].transform.position;
+                if (grid[i, j] == true)
                 {
-                    Vector3 tilePosition = gridObjects[i, j].transform.position;
-                    Destroy(gridObjects[i, j]);
                     gridObjects[i, j] = Instantiate(floorTile, tilePosition, Quaternion.identity, transform);
+                }
+                else
+                {
+                    gridObjects[i, j] = Instantiate(basicFloorTile, tilePosition, Quaternion.identity, transform);
                 }
             }
         }
         */
 
+        //Clear the walkers
         randomWalkers.Clear();
     }
 
+    //This function spawns the appropriate dungeon tiles at the correct positions according to the generated grid
+    // Also has a chance to instantiate rocks or stones at free spaces
     private void CreateFloorTiles()
     {
         for (int i = 0; i < gridSize * 1.2; i++)
@@ -176,9 +168,9 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
+    //Uses the marching cube algorithm to decided which walls should be instantiated. The list of walls has to be prepared exactly within the engine inspector
     private void PlaceWalls()
     {
-        //WallsContainer.transform.localPosition = new Vector3(0f, Walls[0].GetComponent<MeshFilter>().sharedMesh.bounds.size.y/2,0f);
         for (int i = 0; i < gridSize; i++)
         {
             for (int j = 0; j < gridSize; j++)
@@ -186,7 +178,7 @@ public class GridGenerator : MonoBehaviour
                 //If dungeon space place no block
                 if (grid[i, j] == true) { continue; }
 
-                //Debug.Log($"I: {i}\t J: {j}");
+                //Marching Cube Algorithm
                 int WallIndex = 0;
                 if (j + 1 < gridSize)
                 {
@@ -214,8 +206,11 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
+    //This function fills outside of the generated dungeon with dirt blocks. It instantiate blocks with a 10% size of the original grid on each side
+    //Also spawns colliders and positions them around the grid to keep the player on the map
     private void FillOutsideWithDirt()
     {
+        //Dirt blocks
         for (int i = 0; i < gridSize * 1.2; i++)
         {
             for (int j = 0; j < gridSize * 1.2; j++)
@@ -231,12 +226,13 @@ public class GridGenerator : MonoBehaviour
             }
         }
 
-        for(int i = 0; i < 4; i++)
+        //Colliders
+        for (int i = 0; i < 4; i++)
         {
             GameObject wall = Instantiate(colliderWall, colliderContainer.transform);
             wall.GetComponent<BoxCollider>().size = new Vector3(gridSize * 1.2f, 10f, 2f);
             wall.transform.rotation = Quaternion.Euler(0f, i * 90f, 0f);
-            switch(i)
+            switch (i)
             {
                 case 0:
                     wall.transform.position = new Vector3((meshWidth * gridSize * 0.6f) - (gridSize * 1.2f * 0.1f), 0f, 0f - (gridSize * 1.2f * 0.1f));
@@ -252,11 +248,11 @@ public class GridGenerator : MonoBehaviour
                     break;
             }
         }
-        //DirtContainer.GetComponent<BoxCollider>().size = new Vector3(gridSize * 1.2f, 50f, gridSize * 1.2f);
-        //sDirtContainer.GetComponent<BoxCollider>().center = new Vector3(DirtContainer.GetComponent<BoxCollider>().size.x/2f, 0f, DirtContainer.GetComponent<BoxCollider>().size.z/2f);
     }
 
 
+    //This functions spawns the player at an appropriate location
+    //Then spawns the treasure at an appropriate location with a minimum of 3/4 grid size distance
     private void SpawnPlayer()
     {
         bool canSpawn = false;
@@ -285,8 +281,11 @@ public class GridGenerator : MonoBehaviour
         Instantiate(treasureObject, new Vector3(meshWidth * x, 0f, meshHeight * y), playerCharacter.transform.rotation);
     }
 
+    //This function spawns a coin at a proper position
+    //Then continues spawning on of three spike trap patterns around the  coin
     private void SpawnCoinTrap()
     {
+        //Coin
         bool canSpawn = false;
         int x = 0;
         int y = 0;
@@ -298,10 +297,12 @@ public class GridGenerator : MonoBehaviour
             y = Random.Range(0, gridSize);
             canSpawn = grid[x, y];
             if (canSpawn) { DestroyObject(x, y); }
-            if(whileCounter >= 30) { return; }
+            if(whileCounter >= 100) { return; }
         }
         Instantiate(coin, new Vector3(meshWidth * x, 0.2f, meshHeight * y), coin.transform.rotation, coinTrapContainer.transform);
 
+
+        //Spike Trap Pattern
         float rValue = Random.value;
         switch (rValue)
         {
@@ -354,9 +355,11 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
+
+    //This function generates enemy camps by finding a proper location first, then spawning corners, walls, coins and barrels and three enemies around
     private void SpawnEnemyCamp()
     {
-        //Spawn Center
+        //Find Location
         bool canSpawn = false;
         int x = 0;
         int y = 0;
@@ -385,6 +388,7 @@ public class GridGenerator : MonoBehaviour
             if (canSpawn) { DestroyObject(x, y); }
             if (whileCounter >= 100f) { return; }
         }
+        //Spawn Barrel at centre
         Instantiate(barrel, new Vector3(meshWidth * x + Random.Range(-meshWidth, meshWidth), 0f, meshHeight * y + Random.Range(-meshHeight, meshHeight)), Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), enemyCampContainer.transform);
         //Walls
         int startingPointI = Random.Range(-4, 0);
@@ -470,6 +474,7 @@ public class GridGenerator : MonoBehaviour
         Instantiate(enemy, new Vector3(meshWidth * x + xOffset, 0.2f, meshHeight * y + yOffset), Quaternion.Euler(0f, 180f, 0f), enemyCampContainer.transform);
     }
 
+    //This function spawns enemies at appropriate locations within the dungeon
     private void SpawnEnemy()
     {
         bool canSpawn = false;
@@ -485,6 +490,9 @@ public class GridGenerator : MonoBehaviour
         Instantiate(enemy, new Vector3(x * meshWidth, 0f, y * meshHeight), enemy.transform.rotation,enemyCampContainer.transform);
     }
 
+    //This function checks if there are any objects and destroys them
+    // It takes the x and y coordinates within the grid and does a physics cast to find colliders
+    //If they are walls or objects, it deletes that object
     private void DestroyObject(int x, int y)
     {
         RaycastHit[] foundObjects = Physics.SphereCastAll(new Vector3(meshWidth * x, 0f, meshHeight * y), 0.1f, transform.forward,0.1f);
@@ -498,6 +506,9 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
+    //The Random Walker Class
+    //Keeps track of it's location and moves randomly on the grid with the moveOnGrid function
+    //Activates the current position with the Activate position function
     public class RandomWalker
     {
         public Vector2 position;

@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//This script controls the spike traps, cycles randomly through the activated and deactivates state
+// Sets the Colliders accordingly to block the player when activated
 public class TrapScript : MonoBehaviour
 {
     public Animator animator;

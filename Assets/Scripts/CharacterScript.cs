@@ -2,6 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/* This script controls the player character. It gets the keyboard input, sets the animator states
+ * Rotates the GameObject according to the movement direction and moves the character according to the input
+ */
+
 public class CharacterScript : MonoBehaviour
 {
     public Camera characterCamera;

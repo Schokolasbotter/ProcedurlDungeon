@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class enemyScript : MonoBehaviour
 {
+    /* This script controls the enemy NPCs
+     * In manages the state between walking and standing, updates the animator
+     * It rotates the object in the waling direction and controls the walking
+     */
 
     private Animator animator;
     private CharacterController characterController;
@@ -24,7 +28,7 @@ public class enemyScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Change State
+        //State Management
         if(timer >= walkTime)
         {
             isWalking = !isWalking;
@@ -42,7 +46,7 @@ public class enemyScript : MonoBehaviour
             walkTime = Random.Range(0.3f, 1f);
         }
 
-        //Rotation
+        //Rotate in the walking  direction
         movementVector.y = 0f;
         if (movementVector != Vector3.zero)
         {

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// This script controls the rotation of the coin and deletes the coin when the player touches the trigger
 public class CoinScript : MonoBehaviour
 { 
     public float rotationSpeed =5f;

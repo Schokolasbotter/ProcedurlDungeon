@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//This script controls the player camera
+//It follows the player constantly and keeps the camera at an angle so the user has an isometric view of the game
 public class CameraFollowScript : MonoBehaviour
 {
     public Transform PlayerTransform;
@@ -15,6 +17,6 @@ public class CameraFollowScript : MonoBehaviour
     void Update()
     {
         PlayerTransform = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
-        transform.position = PlayerTransform.position + new Vector3(-1f, 1.39999998f, -1f);
+        transform.position = PlayerTransform.position + new Vector3(-1f, 1.4f, -1f);
     }
 }

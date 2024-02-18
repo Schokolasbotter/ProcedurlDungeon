@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+
+// This script manages the treasure. Sets the animator state and loads the scene after the treasure has been interacted with
 public class TreasureScript : MonoBehaviour
 {
     public Animator animator;
